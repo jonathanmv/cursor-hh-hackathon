@@ -1,23 +1,34 @@
-# MoneyChat Virtual Office
+# MoneyChat Virtual Office - Production Build
 FROM node:20-alpine
 
 WORKDIR /app
 
 # Install dependencies first (better caching)
-COPY virtual-office/package*.json ./virtual-office/
-RUN cd virtual-office && npm install
+COPY virtual-office/package*.json ./
+RUN npm install
 
 # Copy application code
-COPY virtual-office/ ./virtual-office/
+COPY virtual-office/ ./
 
-# Copy OpenClaw config template (will be overwritten by volume mount if needed)
-COPY openclaw-config/ /root/.openclaw/
+# Build the frontend for production
+RUN npm run build
 
-# Expose ports
-# 5173 - Vite dev server
-# 3001 - SSE proxy
-EXPOSE 5173 3001
+# Create sessions directory for OpenClaw integration
+RUN mkdir -p /data/sessions
 
-# Start both the proxy and the dev server
-WORKDIR /app/virtual-office
-CMD ["sh", "-c", "node proxy.cjs & npm run dev -- --host"]
+# Environment variables (override these at runtime)
+ENV PORT=3001
+ENV SESSIONS_DIR=/data/sessions
+ENV BASE_URL=http://localhost:3001
+# TELEGRAM_BOT_TOKEN must be set at runtime
+# VITE_OPENAI_API_KEY can be set at build time for frontend
+
+# Expose single port (proxy serves both API and static files)
+EXPOSE 3001
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3001/ || exit 1
+
+# Start the server
+CMD ["node", "proxy.cjs"]

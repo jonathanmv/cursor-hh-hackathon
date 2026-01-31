@@ -1,12 +1,15 @@
 import { useEffect } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Office } from './components/Office';
 import { Sidebar } from './components/Sidebar';
 import { CollaborationSpace } from './components/CollaborationSpace';
 import { MessageInbox } from './components/MessageInbox';
+import { OrchestrationPanel } from './components/OrchestrationPanel';
+import { NewsletterReview } from './components/NewsletterReview';
 import { useOfficeStore } from './store/officeStore';
 import { openclawService } from './services/openclawService';
 
-function App() {
+function MainOffice() {
   const showCollaborationSpace = useOfficeStore((s) => s.showCollaborationSpace);
   const isConnected = useOfficeStore((s) => s.isConnected);
 
@@ -48,6 +51,9 @@ function App() {
       {/* Message Inbox - Orchestrator's view */}
       <MessageInbox />
 
+      {/* Orchestration Panel - Shows active conversations */}
+      <OrchestrationPanel />
+
       {/* Instructions overlay */}
       <div
         style={{
@@ -81,11 +87,22 @@ function App() {
           />
           {isConnected ? 'Connected' : 'Disconnected'}
         </span>
-        <span>🖱️ Drag to rotate</span>
-        <span>📍 Click desk to assign</span>
-        <span>👤 Click freelancer to chat</span>
+        <span>Drag to rotate</span>
+        <span>Click desk to assign</span>
+        <span>Click freelancer to chat</span>
       </div>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<MainOffice />} />
+        <Route path="/review/:id" element={<NewsletterReview />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 

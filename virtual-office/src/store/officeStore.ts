@@ -22,7 +22,7 @@ interface OfficeState {
   addTask: (task: Omit<Task, 'id' | 'createdAt'>) => void;
   updateTask: (id: string, updates: Partial<Task>) => void;
   addMessage: (message: Omit<Message, 'id' | 'timestamp'>) => void;
-  addTelegramMessage: (message: Omit<TelegramMessage, 'id' | 'timestamp' | 'processed'>) => void;
+  addTelegramMessage: (message: Omit<TelegramMessage, 'id' | 'processed' | 'timestamp'> & { id?: string; timestamp?: Date | string }) => void;
   routeTelegramMessage: (messageId: string, freelancerId: string) => void;
   completeTask: (freelancerId: string, messageId: string) => void;
   setConnected: (connected: boolean) => void;
@@ -205,8 +205,8 @@ export const useOfficeStore = create<OfficeState>((set, _get) => ({
     set((state) => {
       const newMessage = {
         ...message,
-        id: `tg-${Date.now()}`,
-        timestamp: new Date(),
+        id: message.id || `tg-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        timestamp: message.timestamp ? new Date(message.timestamp) : new Date(),
         processed: false,
       };
 
