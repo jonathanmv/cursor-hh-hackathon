@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+virtual-office/node_modules/
+
+# Build output
+dist/
+virtual-office/dist/
+
+# Secrets (never include in image)
+secrets/
+.env
+*.env.local
+
+# Data volumes
+data/
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+*.log

@@ -1,0 +1,19 @@
+services:
+  # MoneyChat Virtual Office UI
+  moneychat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"   # Vite dev server
+      - "3001:3001"   # SSE proxy for Telegram messages
+    volumes:
+      # Mount host's OpenClaw sessions (for local development)
+      # Users should run OpenClaw on their host machine
+      - ~/.openclaw/agents/main/sessions:/root/.openclaw/agents/main/sessions:ro
+    restart: unless-stopped
+
+# Note: OpenClaw should be run separately on the host:
+#   npm install -g openclaw@latest
+#   openclaw onboard --install-daemon
+#   openclaw gateway

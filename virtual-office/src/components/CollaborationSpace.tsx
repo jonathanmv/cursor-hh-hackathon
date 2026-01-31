@@ -4,6 +4,8 @@ import { useOfficeStore } from '../store/officeStore';
 export function CollaborationSpace() {
   const selectedFreelancer = useOfficeStore((s) => s.selectedFreelancer);
   const freelancers = useOfficeStore((s) => s.freelancers);
+  const tasks = useOfficeStore((s) => s.tasks);
+  const telegramMessages = useOfficeStore((s) => s.telegramMessages);
   const setCollaborationSpace = useOfficeStore((s) => s.setCollaborationSpace);
   const updateFreelancer = useOfficeStore((s) => s.updateFreelancer);
   const [input, setInput] = useState('');
@@ -11,10 +13,21 @@ export function CollaborationSpace() {
     { role: 'user' | 'ai'; content: string }[]
   >([]);
   const [output, setOutput] = useState<string | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
 
   const freelancer = freelancers.find((f) => f.id === selectedFreelancer);
 
   if (!freelancer) return null;
+
+  // Get tasks assigned to this freelancer
+  const freelancerTasks = tasks.filter((t) => t.assignedTo === freelancer.id);
+  const completedTasks = freelancerTasks.filter((t) => t.status === 'completed');
+  const inProgressTasks = freelancerTasks.filter((t) => t.status === 'in-progress');
+
+  // Get current task context (from routed telegram message)
+  const currentTaskMessage = inProgressTasks.length > 0
+    ? telegramMessages.find((m) => m.id === inProgressTasks[0].sourceMessageId)
+    : null;
 
   const roleIcon: Record<string, string> = {
     orchestrator: '📞',
@@ -184,9 +197,120 @@ Chiara ❤️
         </button>
       </div>
 
+      {/* Tab Navigation */}
+      <div
+        style={{
+          display: 'flex',
+          borderBottom: '1px solid #e5e7eb',
+          background: '#f9fafb',
+        }}
+      >
+        <button
+          onClick={() => setShowHistory(false)}
+          style={{
+            flex: 1,
+            padding: '12px',
+            border: 'none',
+            background: !showHistory ? 'white' : 'transparent',
+            borderBottom: !showHistory ? '2px solid #3b82f6' : '2px solid transparent',
+            fontWeight: !showHistory ? '600' : '400',
+            color: !showHistory ? '#3b82f6' : '#6b7280',
+            cursor: 'pointer',
+          }}
+        >
+          💬 Chat
+        </button>
+        <button
+          onClick={() => setShowHistory(true)}
+          style={{
+            flex: 1,
+            padding: '12px',
+            border: 'none',
+            background: showHistory ? 'white' : 'transparent',
+            borderBottom: showHistory ? '2px solid #3b82f6' : '2px solid transparent',
+            fontWeight: showHistory ? '600' : '400',
+            color: showHistory ? '#3b82f6' : '#6b7280',
+            cursor: 'pointer',
+          }}
+        >
+          📋 History ({completedTasks.length})
+        </button>
+      </div>
+
       {/* Content Area - Split View */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-        {/* Chat */}
+        {/* History View */}
+        {showHistory ? (
+          <div
+            style={{
+              flex: 1,
+              overflowY: 'auto',
+              padding: '16px',
+            }}
+          >
+            <h3 style={{ margin: '0 0 16px 0', fontSize: '14px', color: '#6b7280' }}>
+              Task History
+            </h3>
+            {freelancerTasks.length === 0 ? (
+              <div style={{ textAlign: 'center', color: '#9ca3af', marginTop: '40px' }}>
+                <p>No tasks assigned yet</p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {freelancerTasks.map((task) => {
+                  const sourceMsg = telegramMessages.find((m) => m.id === task.sourceMessageId);
+                  return (
+                    <div
+                      key={task.id}
+                      style={{
+                        padding: '12px',
+                        background: task.status === 'completed' ? '#f0fdf4' : '#fefce8',
+                        borderRadius: '8px',
+                        border: `1px solid ${task.status === 'completed' ? '#86efac' : '#fde047'}`,
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                        <span style={{ fontSize: '16px' }}>
+                          {task.status === 'completed' ? '✅' : task.status === 'in-progress' ? '⏳' : '📝'}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: '12px',
+                            padding: '2px 8px',
+                            borderRadius: '12px',
+                            background: task.status === 'completed' ? '#22c55e' : '#eab308',
+                            color: 'white',
+                          }}
+                        >
+                          {task.status}
+                        </span>
+                        {sourceMsg && (
+                          <span style={{ fontSize: '12px', color: '#6b7280' }}>
+                            from {sourceMsg.from}
+                          </span>
+                        )}
+                      </div>
+                      <p style={{ margin: 0, fontSize: '14px', color: '#1f2937' }}>
+                        {task.description}
+                      </p>
+                      <p style={{ margin: '8px 0 0 0', fontSize: '11px', color: '#9ca3af' }}>
+                        {task.createdAt instanceof Date
+                          ? task.createdAt.toLocaleString()
+                          : new Date(task.createdAt).toLocaleString()}
+                        {task.completedAt && (
+                          <> → Completed {task.completedAt instanceof Date
+                            ? task.completedAt.toLocaleString()
+                            : new Date(task.completedAt).toLocaleString()}</>
+                        )}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        ) : (
+        /* Chat View */
         <div
           style={{
             flex: 1,
@@ -195,6 +319,23 @@ Chiara ❤️
             borderRight: output ? '1px solid #e5e7eb' : 'none',
           }}
         >
+          {/* Current Task Banner */}
+          {currentTaskMessage && (
+            <div
+              style={{
+                padding: '12px 16px',
+                background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                borderBottom: '1px solid #f59e0b',
+                fontSize: '13px',
+              }}
+            >
+              <div style={{ fontWeight: '600', marginBottom: '4px' }}>
+                📨 Working on message from {currentTaskMessage.from}
+              </div>
+              <div style={{ color: '#92400e' }}>{currentTaskMessage.content}</div>
+            </div>
+          )}
+
           {/* Messages */}
           <div
             style={{
@@ -206,7 +347,7 @@ Chiara ❤️
               gap: '12px',
             }}
           >
-            {conversation.length === 0 && (
+            {conversation.length === 0 && !currentTaskMessage && (
               <div
                 style={{
                   textAlign: 'center',
@@ -295,6 +436,7 @@ Chiara ❤️
             </button>
           </div>
         </div>
+        )}
 
         {/* Output Preview */}
         {output && (

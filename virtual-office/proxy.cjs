@@ -136,16 +136,19 @@ function findSessionFile() {
 
     // Find session with telegram origin
     for (const [key, session] of Object.entries(sessions)) {
-      if (session.origin?.provider === 'telegram' && session.sessionFile) {
-        return session.sessionFile;
+      if (session.origin?.provider === 'telegram' && session.sessionId) {
+        // Construct path from session ID (don't use stored absolute path)
+        const sessionFile = path.join(SESSIONS_DIR, `${session.sessionId}.jsonl`);
+        if (fs.existsSync(sessionFile)) {
+          return sessionFile;
+        }
       }
     }
 
-    // Fall back to any session with a file
-    for (const [key, session] of Object.entries(sessions)) {
-      if (session.sessionFile && fs.existsSync(session.sessionFile)) {
-        return session.sessionFile;
-      }
+    // Fall back to any .jsonl file in sessions dir
+    const files = fs.readdirSync(SESSIONS_DIR).filter(f => f.endsWith('.jsonl'));
+    if (files.length > 0) {
+      return path.join(SESSIONS_DIR, files[0]);
     }
   } catch (e) {
     console.error('[SESSION] Error finding session:', e.message);
