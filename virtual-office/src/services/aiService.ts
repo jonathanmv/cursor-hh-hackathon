@@ -48,10 +48,23 @@ function mockResponse(messages: ChatMessage[]): string {
   const systemMessage = messages.find(m => m.role === 'system')?.content || '';
 
   if (systemMessage.includes('analyze the intent')) {
-    if (lastUserMessage.toLowerCase().includes('newsletter')) {
+    const msg = lastUserMessage.toLowerCase();
+
+    // Check for greetings
+    const greetings = ['hi', 'hello', 'hey', 'hola', 'ciao', 'good morning', 'good afternoon', 'good evening', 'howdy', 'sup', 'yo'];
+    if (greetings.some(g => msg === g || msg.startsWith(g + ' ') || msg.startsWith(g + '!'))) {
+      return JSON.stringify({ intent: 'greeting', confidence: 0.95 });
+    }
+
+    // Check for help requests
+    if (msg.includes('help') || msg.includes('what can you do') || msg.includes('how does this work')) {
+      return JSON.stringify({ intent: 'help', confidence: 0.9 });
+    }
+
+    if (msg.includes('newsletter')) {
       return JSON.stringify({ intent: 'newsletter', confidence: 0.95 });
     }
-    if (lastUserMessage.toLowerCase().includes('research')) {
+    if (msg.includes('research')) {
       return JSON.stringify({ intent: 'research', confidence: 0.9 });
     }
     return JSON.stringify({ intent: 'unknown', confidence: 0.3 });
@@ -93,8 +106,14 @@ export async function analyzeIntent(message: string): Promise<IntentAnalysis> {
     {
       role: 'system',
       content: `You are an intent analyzer. Given a user message, analyze the intent and return a JSON object with:
-- intent: one of "newsletter", "research", or "unknown"
+- intent: one of "greeting", "help", "newsletter", "research", or "unknown"
 - confidence: a number between 0 and 1
+
+"greeting" = casual hellos, hi, hey, etc.
+"help" = asking what you can do, how this works
+"newsletter" = wants to create a newsletter or email content
+"research" = wants research or information gathering
+"unknown" = unclear what they want
 
 Only respond with valid JSON, no other text.`,
     },
@@ -109,6 +128,33 @@ Only respond with valid JSON, no other text.`,
   } catch {
     return { intent: 'unknown', confidence: 0.5 };
   }
+}
+
+export function getWelcomeMessage(): string {
+  return `Hey! 👋 I'm your AI assistant. Here's what I can help you with:
+
+📧 **Create a Newsletter** - Just say "Create a newsletter about [topic]" and I'll write one for you
+
+🔍 **Research** - Ask me to research any topic (coming soon)
+
+What would you like to do?`;
+}
+
+export function getHelpMessage(): string {
+  return `Here's how I can help:
+
+📧 **Newsletter Creation**
+Just tell me what you want a newsletter about, and I'll:
+1. Ask a few questions to understand your needs
+2. Generate a professional newsletter
+3. Send you a preview link to review and approve
+
+**Try saying:**
+• "Create a newsletter about AI trends"
+• "I need a newsletter for my fitness audience"
+• "Write a newsletter about productivity tips"
+
+What would you like me to create?`;
 }
 
 export interface ExtractedInfo {

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 export type ConversationPhase = 'gathering' | 'processing' | 'generating' | 'review' | 'complete';
-export type IntentType = 'newsletter' | 'research' | 'unknown';
+export type IntentType = 'newsletter' | 'research' | 'greeting' | 'help' | 'unknown';
 
 export interface Newsletter {
   id: string;

@@ -7,6 +7,8 @@ import {
   checkCompleteness,
   generateNewsletter,
   generateClarifyingQuestion,
+  getWelcomeMessage,
+  getHelpMessage,
 } from './aiService';
 import { sendToTelegram } from './telegramService';
 
@@ -136,6 +138,74 @@ class OpenClawService {
         phase: 'gathering',
       });
 
+      // Handle greeting intent
+      if (intentAnalysis.intent === 'greeting') {
+        const welcomeMessage = getWelcomeMessage();
+        console.log('[ORCH] Responding to greeting');
+
+        orchestrationStore.addMessageToConversation(conversationId, 'assistant', welcomeMessage);
+        orchestrationStore.setConversationPhase(conversationId, 'complete');
+
+        await sendToTelegram(chatId, welcomeMessage);
+
+        officeStore.updateFreelancer('orchestrator', {
+          status: 'idle',
+          currentTask: null,
+        });
+        return;
+      }
+
+      // Handle help intent
+      if (intentAnalysis.intent === 'help') {
+        const helpMessage = getHelpMessage();
+        console.log('[ORCH] Responding to help request');
+
+        orchestrationStore.addMessageToConversation(conversationId, 'assistant', helpMessage);
+        orchestrationStore.setConversationPhase(conversationId, 'complete');
+
+        await sendToTelegram(chatId, helpMessage);
+
+        officeStore.updateFreelancer('orchestrator', {
+          status: 'idle',
+          currentTask: null,
+        });
+        return;
+      }
+
+      // Handle unknown intent
+      if (intentAnalysis.intent === 'unknown') {
+        const unknownMessage = `I'm not sure what you're looking for. ${getHelpMessage()}`;
+        console.log('[ORCH] Unknown intent, providing help');
+
+        orchestrationStore.addMessageToConversation(conversationId, 'assistant', unknownMessage);
+        orchestrationStore.setConversationPhase(conversationId, 'complete');
+
+        await sendToTelegram(chatId, unknownMessage);
+
+        officeStore.updateFreelancer('orchestrator', {
+          status: 'idle',
+          currentTask: null,
+        });
+        return;
+      }
+
+      // Handle research intent (coming soon)
+      if (intentAnalysis.intent === 'research') {
+        const researchMessage = `Research capabilities are coming soon! For now, I can help you create newsletters.\n\nWant to try? Just say "Create a newsletter about [your topic]"`;
+        console.log('[ORCH] Research intent - coming soon');
+
+        orchestrationStore.addMessageToConversation(conversationId, 'assistant', researchMessage);
+        orchestrationStore.setConversationPhase(conversationId, 'complete');
+
+        await sendToTelegram(chatId, researchMessage);
+
+        officeStore.updateFreelancer('orchestrator', {
+          status: 'idle',
+          currentTask: null,
+        });
+        return;
+      }
+
       if (intentAnalysis.intent === 'newsletter') {
         // Set required fields for newsletter
         orchestrationStore.updateConversation(conversationId, {
@@ -143,7 +213,7 @@ class OpenClawService {
         });
       }
 
-      conversation = orchestrationStore.conversations.get(conversationId)!;
+      conversation = orchestrationStore.conversations.get(conversationId)!
     } else {
       // Add message to existing conversation
       orchestrationStore.addMessageToConversation(conversation.id, 'user', content);

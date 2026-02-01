@@ -166,7 +166,7 @@ export function MessageInbox() {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {unprocessedMessages.map((message) => (
+            {[...unprocessedMessages].reverse().map((message) => (
               <div
                 key={message.id}
                 style={{
@@ -269,6 +269,7 @@ export function MessageInbox() {
             {telegramMessages
               .filter((m) => m.processed)
               .slice(-3)
+              .reverse()
               .map((m) => {
                 const freelancer = freelancers.find((f) => f.id === m.routedTo);
                 return (
