@@ -1,7 +1,10 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ThreeEvent } from '@react-three/fiber';
+import { useGLTF } from '@react-three/drei';
+import type { Mesh } from 'three';
 import { useOfficeStore } from '../store/officeStore';
 import type { Desk as DeskType } from '../types';
+import chairUrl from '../assets/chair.glb';
 
 interface DeskProps {
   desk: DeskType;
@@ -11,6 +14,18 @@ export function Desk({ desk }: DeskProps) {
   const [hovered, setHovered] = useState(false);
   const assignToDesk = useOfficeStore((s) => s.assignToDesk);
   const freelancers = useOfficeStore((s) => s.freelancers);
+  const chairGltf = useGLTF(chairUrl);
+  const chairScene = useMemo(() => {
+    const scene = chairGltf.scene.clone(true);
+    scene.traverse((child) => {
+      const mesh = child as Mesh;
+      if (mesh.isMesh) {
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+      }
+    });
+    return scene;
+  }, [chairGltf]);
 
   const unassignedFreelancers = freelancers.filter((f) => f.deskPosition === null);
 
@@ -68,16 +83,10 @@ export function Desk({ desk }: DeskProps) {
         <meshStandardMaterial color="#333" />
       </mesh>
 
-      {/* Chair */}
-      <mesh position={[0, 0.5, 0.7]} castShadow>
-        <boxGeometry args={[0.5, 0.5, 0.5]} />
-        <meshStandardMaterial color={desk.occupied ? '#2563eb' : '#404040'} />
-      </mesh>
-      {/* Chair back */}
-      <mesh position={[0, 0.9, 0.9]} castShadow>
-        <boxGeometry args={[0.5, 0.6, 0.1]} />
-        <meshStandardMaterial color={desk.occupied ? '#1d4ed8' : '#333'} />
-      </mesh>
+      {/* Chair model */}
+      <group position={[0, 0.05, 0.8]} rotation={[0, -Math.PI / 2, 0]} scale={[0.9, 0.9, 0.9]}>
+        <primitive object={chairScene} />
+      </group>
 
       {/* Desk indicator - shows if empty and clickable */}
       {!desk.occupied && unassignedFreelancers.length > 0 && (
